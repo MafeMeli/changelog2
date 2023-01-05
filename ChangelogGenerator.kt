@@ -18,19 +18,22 @@ import java.util.Date
  * 4. Use the green arrow to execute the code.
  * 5. Get the generated changelog form the console.
  */
-
-private const val changelogMilestone = "5.0.0"
-fun main() {
-    val json = File("pr.json").readText(Charsets.UTF_8)
+fun main(vararg milestone: String) {
+    // ToDo: Llamar al api y reemplazar éste archivo. Usar kotlin
+    // ToDo: Intentar generar un ejecutable.
+    val json = File("/Users/ariavargas/Documents/changelog2/pr.json").readText(Charsets.UTF_8)
 
     val pullRequests = json.toListOfPullRequests()
 
-    val fixes = pullRequests.filter { it isFixInMilestone changelogMilestone }
-        .getListOfPullRequests()
-    val features = pullRequests.filter { it isFeatureInMilestone changelogMilestone }
-        .getListOfPullRequests()
+    milestone.forEach { pullRequests.printChangelog(it) }
+}
 
-    printListOfPullRequestsOnConsole(changelogMilestone, features, fixes)
+fun List<PullRequest>.printChangelog(milestone: String) {
+    val fixes = this.filter { it isFixInMilestone milestone }
+        .getListOfPullRequests()
+    val features = this.filter { it isFeatureInMilestone milestone }
+        .getListOfPullRequests()
+    printListOfPullRequestsOnConsole(milestone, features, fixes)
 }
 
 fun String.toListOfPullRequests(): List<PullRequest> =
@@ -47,19 +50,23 @@ fun List<PullRequest>.getListOfPullRequests() = this.map {
 }
 
 fun printListOfPullRequestsOnConsole(milestone: String, features: List<String>, fixes: List<String>) {
-    val githubUrl = "https://github.com/mercadolibre/fury_flow-mpos-android/tree/"
-    println()
-    println("## [$milestone]($githubUrl$milestone) ${Date()}")
-    println("\n## Added")
-    features.printOnConsole()
-    println("\n## Fixed")
-    fixes.printOnConsole()
+    if (features.isNotEmpty() || fixes.isNotEmpty()) {
+        val githubUrl = "https://github.com/mercadolibre/fury_flow-mpos-android/tree/"
+        println("\n\n## [$milestone]($githubUrl$milestone) ${Date()}")
+        features.printOnConsole(isFeature = true)
+        fixes.printOnConsole(isFeature = false)
+    }
 }
 
-fun List<String>.printOnConsole() {
-    for (feature in this)
-        println(feature)
+fun List<String>.printOnConsole(isFeature: Boolean = true) {
+    if (this.isNotEmpty()) {
+        println("\n## ${isFeature.getSubtitle()}")
+        for (feature in this)
+            println(feature)
+    }
 }
+
+fun Boolean.getSubtitle(): String = if (this) "Feature" else "Fix"
 
 data class PullRequest(
     @SerializedName("merged_at")
