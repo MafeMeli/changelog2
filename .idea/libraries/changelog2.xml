@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="changelog2">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/kotlin-stdlib-jdk8-1.5.32.jar!/" />
+      <root url="jar://$PROJECT_DIR$/kotlin-stdlib-jdk7-1.5.32.jar!/" />
+      <root url="jar://$PROJECT_DIR$/gson-2.8.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/android.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
