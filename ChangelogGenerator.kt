@@ -1,87 +1,34 @@
 package com.mercadopago.mpos.fcu
 
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
-import com.google.gson.reflect.TypeToken
-import java.io.File
-import java.util.Date
+import com.mercadopago.mpos.fcu.data.api.RepoName.MPOS_ANDROID
+import com.mercadopago.mpos.fcu.data.repository.GitHubRepository
+import com.mercadopago.mpos.fcu.utils.printChangelog
 
 /**
  * Created by MafeMeli.
- * This file takes a json response with a list of merged PR's from github api.
+ * This file takes the response with a list of merged PR's from github api.
  * @See (https://docs.github.com/es/rest/pulls/pulls?apiVersion=2022-11-28#list-pull-requests for more information.)
  * Follow the next steps to generate the changelog:
- * 1. Use postman to run curl from the page above.
- *  url: https://api.github.com/repos/Mercadolibre/fury_flow-mpos-android/pulls?state=closed&page=1&per_page=50&sort=updated&direction=desc
- * 2. Get the response and replace the content in the file pr.json
- * 3. Replace de changelogMilestone value
- * 4. Use the green arrow to execute the code.
- * 5. Get the generated changelog form the console.
+ * 1. Go to utils/Constants.kt and paste the API key
+ *      generate GITHUB token:
+ *          https://docs.github.com/es/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
+ *      Note: Make sure to check: repo, admin:org->read, admin:public_key
+ * 2. Replace the MAJOR, MINOR and MAX_PATH for the list Milestones.
+ *      Example: MAJOR=5, MINOR=0 and MAX_PATCH=3, generates the changelo for: 5.0.0, 5.0.1, 5.0.2
+ * 3. Use the green arrow near to the main function to execute the code
+ * 4. Get the generated changelog from the console.
  */
-fun main(vararg milestone: String) {
-    // ToDo: Llamar al api y reemplazar éste archivo. Usar kotlin
-    // ToDo: Intentar generar un ejecutable.
-    val json = File("/Users/ariavargas/Documents/changelog2/pr.json").readText(Charsets.UTF_8)
 
-    val pullRequests = json.toListOfPullRequests()
+private const val MAJOR = 5
+private const val MINOR = 0
+private const val MAX_PATCH = 10
+private val patch = (0..MAX_PATCH)
 
-    milestone.forEach { pullRequests.printChangelog(it) }
-}
+fun main() {
 
-fun List<PullRequest>.printChangelog(milestone: String) {
-    val fixes = this.filter { it isFixInMilestone milestone }
-        .getListOfPullRequests()
-    val features = this.filter { it isFeatureInMilestone milestone }
-        .getListOfPullRequests()
-    printListOfPullRequestsOnConsole(milestone, features, fixes)
-}
+    val milestone = patch.map { "$MAJOR.$MINOR.$it" }
 
-fun String.toListOfPullRequests(): List<PullRequest> =
-    Gson().fromJson(this, object : TypeToken<List<PullRequest>>() {}.type)
-
-infix fun PullRequest.isFixInMilestone(milestone: String) =
-    this.milestone?.title == milestone && this.mergedAt != null && this.branchInfo.label.contains("fix")
-
-infix fun PullRequest.isFeatureInMilestone(milestone: String) =
-    this.milestone?.title == milestone && this.mergedAt != null && !this.branchInfo.label.contains("fix")
-
-fun List<PullRequest>.getListOfPullRequests() = this.map {
-    " - ${it.title} [#${it.number}](${it.url})"
-}
-
-fun printListOfPullRequestsOnConsole(milestone: String, features: List<String>, fixes: List<String>) {
-    if (features.isNotEmpty() || fixes.isNotEmpty()) {
-        val githubUrl = "https://github.com/mercadolibre/fury_flow-mpos-android/tree/"
-        println("\n\n## [$milestone]($githubUrl$milestone) ${Date()}")
-        features.printOnConsole(isFeature = true)
-        fixes.printOnConsole(isFeature = false)
+    GitHubRepository().getPullRequestList(MPOS_ANDROID) { pullRequests ->
+        milestone.forEach { pullRequests.printChangelog(it) }
     }
 }
-
-fun List<String>.printOnConsole(isFeature: Boolean = true) {
-    if (this.isNotEmpty()) {
-        println("\n## ${isFeature.getSubtitle()}")
-        for (feature in this)
-            println(feature)
-    }
-}
-
-fun Boolean.getSubtitle(): String = if (this) "Feature" else "Fix"
-
-data class PullRequest(
-    @SerializedName("merged_at")
-    val mergedAt: String?,
-    val milestone: Milestone?,
-    @SerializedName("head")
-    val branchInfo: BranchInfo,
-    val title: String?,
-    val number: String,
-    @SerializedName("html_url")
-    val url: String
-)
-
-data class BranchInfo(
-    val label: String
-)
-
-data class Milestone(val title: String?)
